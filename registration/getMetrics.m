@@ -35,7 +35,7 @@ function [metric_vals, local_max] = getMetrics(target, original_ref, thetas, A, 
     
     
     % Assuming local max is at -0.75/4 = -0.1875 approx
-    idx = find(thetas == -0.1875)
+    idx = find(thetas == -0.1875);
     local_max(1) = metric_vals(1,idx);
     local_max(2) = metric_vals(2,idx);
     local_max(3) = metric_vals(3,idx);
