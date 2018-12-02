@@ -15,6 +15,7 @@ dim=16; radius=5;
 % insertCircles(dim,1,radius,fname,0,0);
 
 I = imread(fname);
+imagesc(I);
 
 if ~ismatrix(I)
     I = rgb2gray(I) + 1;
@@ -65,9 +66,14 @@ G = addedge(G, sink, nodes, t_weight);
 
 % Run max flow 
 
+[mf,GF,cs,ct] = maxflow(G, super_src(1), sink(1))
 
+sink_nodes = ct(1:end-1);
 
+x_vals = G.Nodes.x(sink_nodes);
+y_vals = G.Nodes.y(sink_nodes);
 
+scatter(x_vals,y_vals,50,'filled');
 
 
 
