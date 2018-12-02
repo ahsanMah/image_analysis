@@ -50,7 +50,8 @@ intensities = I(:);
 % Want high weights when connecting to background pixels 
 % If background -> High weight else Low
 s_weight = ones(num_pixels,1);
-s_weight(intensities == 1) = 100;
+% s_weight(intensities == 1) = 100;
+s_weight( gradients > 0)
 
 G = addedge(G, super_src, nodes, s_weight)
 
@@ -60,7 +61,9 @@ sink = zeros(num_pixels,1) + num_pixels + 2;
 % Want high weights when connecting to target class pixels/ foreground
 % If target -> High weight else Low
 t_weight = ones(num_pixels,1);
-t_weight(intensities > 1) = 100;
+% t_weight(intensities > 1) = 100;
+
+t_weight = gradients + 1;
 
 G = addedge(G, sink, nodes, t_weight);
 
@@ -68,10 +71,16 @@ G = addedge(G, sink, nodes, t_weight);
 
 [mf,GF,cs,ct] = maxflow(G, super_src(1), sink(1))
 
+sink_nodes = ct(1:end-1);
 
+x_vals = G.Nodes.x(sink_nodes);
+y_vals = G.Nodes.y(sink_nodes);
 
-x_vals = G.Nodes.x(ct);
-y_vals = G.Nodes.y(ct);
+hold on;
+s = scatter(x_vals,y_vals,50,'filled');
+s.MarkerEdgeColor = 'b';
+hold off;
+
 
 
 
