@@ -28,9 +28,9 @@ original_img = I;
 [G, super_src, sink] = constructGraph(dim, original_img, 1)
 
 % Run max flow
-[mf,GF,cs,ct] = maxflow(G, super_src, sink);
+% [mf,GF,cs,ct] = maxflow(G, super_src, sink);
 
-% dirG = digraph(G.Edges, G.Nodes)
+% Can only run Ford Fulkerson if non parallel edges
 % [mf,GF,cs,ct] = maxflow(G, super_src, sink, 'augmentpath')
 
 sink_nodes = ct(1:end-1);
@@ -40,7 +40,7 @@ x_vals = G.Nodes.x(sink_nodes);
 y_vals = G.Nodes.y(sink_nodes);
 
 hold on;
-s = scatter(x_vals,y_vals,15,'Filled');
+s = scatter(x_vals,y_vals,55,'Filled');
 s.MarkerEdgeColor = 'r';
 hold off;
 
