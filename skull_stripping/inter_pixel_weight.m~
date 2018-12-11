@@ -10,7 +10,7 @@ function weights = inter_pixel_weight(edges, intensities, Gmag, Gdir)
     
     directions = Gdir(:);
     
-    dim  = size(s_nodes,1)
+    dim  = size(s_nodes,1);
     weights = zeros(dim,1);
     
     % Calculating weights for s -> t
@@ -20,7 +20,7 @@ function weights = inter_pixel_weight(edges, intensities, Gmag, Gdir)
         
         % How far away from being perpendicular
         angle_diff = abs(directions(s) - directions(t));
-        weights(idx) = (1 + cos(angle_diff)) * ;
+        weights(idx) = 255;%(1 + cos(angle_diff)) * intensities(s);
     end
 
 end

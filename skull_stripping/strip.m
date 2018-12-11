@@ -26,7 +26,7 @@ imagesc(I); colormap(gray); set(gca,'YDir','normal');
 original_img = I;
 
 % Building graph
-[G, super_src, sink] = constructGraph(dim, original_img, 1)
+[G, super_src, sink] = constructGraph(dim, original_img, 4)
 
 % Run max flow
 [mf,GF,cs,ct] = maxflow(G, super_src, sink);
@@ -40,10 +40,15 @@ src_nodes  = cs(1:end-1);
 x_vals = G.Nodes.x(sink_nodes);
 y_vals = G.Nodes.y(sink_nodes);
 
+src_x = G.Nodes.x(src_nodes);
+src_y = G.Nodes.y(src_nodes);
+
+
 hold on;
 s = scatter(x_vals,y_vals,15,'Filled');
 s.MarkerFaceColor = 'r';
-% s.MarkerEdgeColor = 'r';
+% s = scatter(src_x,src_y,15,'Filled', 'MarkerFaceColor','b');
+% s.MarkerFaceColor = 'r';
 
 hold off;
 

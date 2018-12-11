@@ -34,6 +34,10 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     num_pixels = dim*dim;
     nodes = 1:num_pixels;
     
+    % To ignore pixels outised the brain
+    nonzero_pixels = (intensities > 0);
+    background_pixels = intensities(nonzero_pixels);
+    
     % Adding a super source with Pixel Index = Num Pixels + 1
     super_src = zeros(num_pixels,1) + num_pixels + 1;
     
@@ -42,10 +46,10 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
 
     
     %Assuming background and foreground intensities
-    mean_background = 50
+    mean_background = 75
     
     % General heuristic as skull shows up lighter on MRI
-    mean_target = 175
+    mean_target = 200
 
     % Want high weights when connecting to background pixels 
     % If background -> High weight else Low
@@ -62,6 +66,7 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
         case 1 % Linear Decay
             disp('Using Scheme 1')
             s_weight = 255 ./ (1 + abs(intensities - mean_background));
+  
             t_weight = 255 ./ (1 + abs(intensities - mean_target));
         
         case 2
@@ -69,21 +74,27 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
             t_weight = 255 ./ exp(abs(intensities - mean_target));
         
         case 3
+            original_img(original_img < 30) = 0 ; % Gets rid of the noise outside
             s_weight = original_img;
             t_weight = original_img;
             
-            s_weight(original_img > 175) = 0;
-            t_weight(original_img  175) = 0;
-             
+            s_weight(original_img > mean_target) = 0;
+            t_weight(original_img < mean_target) = 0;
+        
+        case 4
+            
+            s_weight = background_pixels .* min(1, 1./(background_pixels - mean_background).^2);
+            t_weight = intensities .* min(1, 1./(intensities - mean_target).^2);
+        
         otherwise
             s_weight = zeros(num_pixels,1) + 100;
             t_weight = ones(num_pixels,1);
        
     end
     
-     
-
-    G = addedge(G, super_src, nodes, s_weight);
+    
+    back
+    G = addedge(G, super_src, , s_weight);
     G = addedge(G, nodes, sink, t_weight);
     
     super_src = super_src(1);
