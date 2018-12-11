@@ -4,23 +4,22 @@ load 'greyimages.mat' ;
 
 TEST_CASE = 32;
 I = reshape(greyimages(:,TEST_CASE),256, 256);
-I = rescale(I,0,255);
-I = imgaussfilt(I,0.5);
+
 % [Gx,Gy] = imgradientxy(I);
 dim = size(I,1);
 figure(1);
 imagesc(I); colormap(gray); set(gca,'YDir','normal');
 
-%Build Test Image
+% Build Test Image
 % fname = 'test.png';
-% dim=256; radius=32;
+% dim=64; radius=16;
 % insertCircles(dim,1,radius,fname,0,0);
 % I = imread(fname);
 % imagesc(I);
-% 
-% if ~ismatrix(I)
-%     I = rgb2gray(I) + 1;
-% end
+
+if ~ismatrix(I)
+    I = rgb2gray(I) + 1;
+end
 
 
 original_img = I;
@@ -41,10 +40,8 @@ x_vals = G.Nodes.x(sink_nodes);
 y_vals = G.Nodes.y(sink_nodes);
 
 hold on;
-s = scatter(x_vals,y_vals,15,'Filled');
-s.MarkerFaceColor = 'r';
-% s.MarkerEdgeColor = 'r';
-
+s = scatter(x_vals,y_vals,55,'Filled');
+s.MarkerEdgeColor = 'r';
 hold off;
 
 % Change figure size here

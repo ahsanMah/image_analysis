@@ -15,14 +15,14 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     weights = G.Edges.Weight; % All default to 1
     
     % Want bidirectional edges
-    s_nodes = edges(:,1)
-    t_nodes = edges(:,2)
+    s_nodes = edges(:,1);
+    t_nodes = edges(:,2);
     G = addedge(G,t_nodes, s_nodes, weights);
     
     
     [Gmag,Gdir] = imgradient(original_img);
 
-    intensities = original_img(:);
+    intensities = double(original_img(:));
     gradients   = Gmag(:);
     edges = G.Edges.EndNodes;
     
@@ -31,41 +31,60 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     G.Edges.Weight = weights;
     
     
-    % Adding a super source with Pixel Index = Num Pixels + 1
     num_pixels = dim*dim;
     nodes = 1:num_pixels;
-
-    super_src = zeros(num_pixels,1) + num_pixels + 1;
-
-%     switch scheme
-%         case 2
-%             
-%     end
     
-    mean_background = 1
-    mean_target = 154
+    % Adding a super source with Pixel Index = Num Pixels + 1
+    super_src = zeros(num_pixels,1) + num_pixels + 1;
+    
+    % Adding a sink with Pixel Index = Num Pixels + 2
+    sink = zeros(num_pixels,1) + num_pixels + 2;
+
+    
+    %Assuming background and foreground intensities
+    mean_background = 50
+    
+    % General heuristic as skull shows up lighter on MRI
+    mean_target = 175
 
     % Want high weights when connecting to background pixels 
     % If background -> High weight else Low
     s_weight = zeros(num_pixels,1) + 100;
-
-    s_weight = mean_target ./ (abs(intensities - mean_background) + 1) % favors Background
-%     s_weight(intensities > 1) = 1;
-
-    G = addedge(G, super_src, nodes, s_weight);
-
-    % Adding a sink with Pixel Index = Num Pixels + 2
-    sink = zeros(num_pixels,1) + num_pixels + 2;
-
+    
     % Want high weights when connecting to target class pixels/ foreground
     % If target -> High weight else Low
     t_weight = ones(num_pixels,1);
     
-    t_weight = mean_target ./ (abs(intensities - mean_target) + 1) % favors target
+    
+    
+    switch scheme
+        
+        case 1 % Linear Decay
+            disp('Using Scheme 1')
+            s_weight = 255 ./ (1 + abs(intensities - mean_background));
+            t_weight = 255 ./ (1 + abs(intensities - mean_target));
+        
+        case 2
+            s_weight = 255 ./ exp(abs(intensities - mean_background));
+            t_weight = 255 ./ exp(abs(intensities - mean_target));
+        
+        case 3
+            s_weight = original_img;
+            t_weight = original_img;
+            
+            s_weight(original_img > 175) = 0;
+            t_weight(original_img  175) = 0;
+             
+        otherwise
+            s_weight = zeros(num_pixels,1) + 100;
+            t_weight = ones(num_pixels,1);
+       
+    end
+    
+     
 
-%     t_weight = gradients;
-
-    G = addedge(G, sink, nodes, t_weight);
+    G = addedge(G, super_src, nodes, s_weight);
+    G = addedge(G, nodes, sink, t_weight);
     
     super_src = super_src(1);
     sink = sink(1);
