@@ -8,6 +8,8 @@ I = rescale(I,0,255);
 I = imgaussfilt(I,0.5);
 % [Gx,Gy] = imgradientxy(I);
 dim = size(I,1);
+figure(1);
+imagesc(I); colormap(gray); set(gca,'YDir','normal');
 
 % Build Test Image
 % fname = 'test.png';
@@ -20,12 +22,8 @@ if ~ismatrix(I)
     I = rgb2gray(I);
 end
 
-% cutoff = 20;
-% I(I < cutoff) = 0;
-
-figure(1);
-imagesc(I); colormap(gray); set(gca,'YDir','normal');
-
+cutoff = 20;
+I(I < cutoff) = 0;
 
 original_img = I;
 

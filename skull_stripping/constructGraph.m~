@@ -4,15 +4,29 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     %   pixel-pixel  -> 1
     %   source-pixel -> 100 if intensities == background else 1
     %   pixel-sink   -> 100 if intensities == foreground else 1
-
-    % Building graph
-
-    G = imageGraph([dim,dim],4);
     
+    intensities = double(original_img(:));
+    
+    % Building graph
+    G = imageGraph([dim,dim],4);
     G = digraph(G.Edges, G.Nodes)
     
     edges   = G.Edges.EndNodes;
     weights = G.Edges.Weight; % All default to 1
+    
+    % Remove edges involving pixels woth zero intensities
+    
+    for edge = edges.' %Transpose the matrix to loop over rows
+        s = edge(1);
+        t = edge(2);
+        
+        if intensities(s)==0 & intensities(t)==0
+            rm_s = [rm_s s];
+            rm_t = [rm_t 
+        end
+    end
+    
+    G = rmedge(G,rm_s, rm_t);
     
     % Want bidirectional edges
     s_nodes = edges(:,1);
@@ -22,7 +36,7 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     
     [Gmag,Gdir] = imgradient(original_img);
 
-    intensities = double(original_img(:));
+    
     gradients   = Gmag(:);
     edges = G.Edges.EndNodes;
     
@@ -32,17 +46,21 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     
     
     num_pixels = dim*dim;
-    nodes = 1:num_pixels;
+%     nodes = 1:num_pixels;
     
     % To ignore pixels outised the brain
     nonzero_pixels = (intensities > 0);
+    
+    
     background_pixels = intensities(nonzero_pixels);
+    foreground_pixels = background_pixels;
+    num_nonzero = size(background_pixels,1);
     
     % Adding a super source with Pixel Index = Num Pixels + 1
-    super_src = zeros(num_pixels,1) + num_pixels + 1;
+    super_src = zeros(num_nonzero,1) + num_pixels + 1;
     
     % Adding a sink with Pixel Index = Num Pixels + 2
-    sink = zeros(num_pixels,1) + num_pixels + 2;
+    sink = zeros(num_nonzero,1) + num_pixels + 2;
 
     
     %Assuming background and foreground intensities
@@ -84,7 +102,7 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
         case 4
             
             s_weight = background_pixels .* min(1, 1./(background_pixels - mean_background).^2);
-            t_weight = intensities .* min(1, 1./(intensities - mean_target).^2);
+            t_weight = foreground_pixels .* min(1, 1./(foreground_pixels - mean_target).^2);
         
         otherwise
             s_weight = zeros(num_pixels,1) + 100;
@@ -93,9 +111,11 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     end
     
     
-    back
-    G = addedge(G, super_src, , s_weight);
-    G = addedge(G, nodes, sink, t_weight);
+    background_nodes = find(nonzero_pixels == 1);
+    foreground_nodes = background_nodes;
+    
+    G = addedge(G, super_src, background_nodes, s_weight);
+    G = addedge(G, foreground_nodes, sink, t_weight);
     
     super_src = super_src(1);
     sink = sink(1);

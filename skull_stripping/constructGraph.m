@@ -4,17 +4,36 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     %   pixel-pixel  -> 1
     %   source-pixel -> 100 if intensities == background else 1
     %   pixel-sink   -> 100 if intensities == foreground else 1
-
+    
+    intensities = double(original_img(:));
+    
     % Building graph
-
     G = imageGraph([dim,dim],4);
-    
     G = digraph(G.Edges, G.Nodes)
+     
+    % Remove edges involving pixels with very low intensities
+    cutoff = 20
+    edges = G.Edges.EndNodes;   
+    rm_s = []; 
+    rm_t = [];
+    for edge = edges.' %Transpose the matrix to loop over rows
+        s = edge(1);
+        t = edge(2);
+        
+        if intensities(s) < cutoff && intensities(t) < cutoff
+            rm_s = [rm_s s]; rm_t = [rm_t t];
+        end
+    end
     
+    disp('After pruning...');
+    G = rmedge(G,rm_s, rm_t)
+    % Remove nodes that are not connected to anything
+    G = rmnode()
+    
+    % Want bidirectional edges
     edges   = G.Edges.EndNodes;
     weights = G.Edges.Weight; % All default to 1
     
-    % Want bidirectional edges
     s_nodes = edges(:,1);
     t_nodes = edges(:,2);
     G = addedge(G,t_nodes, s_nodes, weights);
@@ -22,7 +41,7 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     
     [Gmag,Gdir] = imgradient(original_img);
 
-    intensities = double(original_img(:));
+    
     gradients   = Gmag(:);
     edges = G.Edges.EndNodes;
     
@@ -62,7 +81,6 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     % Want high weights when connecting to target class pixels/ foreground
     % If target -> High weight else Low
     t_weight = ones(num_pixels,1);
-    
     
     
     switch scheme

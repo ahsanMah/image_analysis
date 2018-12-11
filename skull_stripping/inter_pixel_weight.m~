@@ -8,6 +8,8 @@ function weights = inter_pixel_weight(edges, intensities, Gmag, Gdir)
     % Gradient direction difference
     % More orthogonal - less likely to belong to the same class
     
+    %Remove edges involvin
+    
     directions = Gdir(:);
     
     dim  = size(s_nodes,1);
@@ -20,7 +22,7 @@ function weights = inter_pixel_weight(edges, intensities, Gmag, Gdir)
         
         % How far away from being perpendicular
         angle_diff = abs(directions(s) - directions(t));
-        weights(idx) = 255;%(1 + cos(angle_diff)) * intensities(s);
+        weights(idx) = (1 + cos(angle_diff)) * intensities(s);
     end
 
 end
