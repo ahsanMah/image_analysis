@@ -5,7 +5,7 @@ load 'greyimages.mat' ;
 TEST_CASE = 32;
 I = reshape(greyimages(:,TEST_CASE),256, 256);
 I = rescale(I,0,255);
-I = imgaussfilt(I,0.5);
+I = imgaussfilt(I,0.15);
 % [Gx,Gy] = imgradientxy(I);
 dim = size(I,1);
 
@@ -29,8 +29,11 @@ imagesc(I); colormap(gray); set(gca,'YDir','normal');
 
 original_img = I;
 
+INT_DIFF = 4;
+HYBRID = 3;
+
 % Building graph
-[G, super_src, sink] = constructGraph(dim, original_img, 3)
+[G, super_src, sink] = constructGraph(dim, original_img,INT_DIFF,1)
 
 % Run max flow
 [mf,GF,cs,ct] = maxflow(G, super_src, sink);
@@ -49,13 +52,23 @@ src_y = G.Nodes.y(src_nodes);
 
 
 hold on;
-s = scatter(x_vals,y_vals,5,'Filled','MarkerFaceColor','r');
-% s = scatter(src_x,src_y,10,'Filled', 'MarkerFaceColor','b');
+% s = scatter(x_vals,y_vals,5,'Filled','MarkerFaceColor','r');
+s = scatter(src_x,src_y,10,'Filled', 'MarkerFaceColor','r');
 
 hold off;
 
+[G, super_src, sink] = constructGraph(dim, original_img,HYBRID,1)
 
+% Run max flow
+[mf,GF,cs,ct] = maxflow(G, super_src, sink);
+h_src_nodes = cs(1:end-1);
 
-% Change figure size here
+diff_skull = src_nodes;
+hybrid_skull = h_src_nodes;
 
+I1=I; I1(diff_skull) = 0; I1(hybrid_skull) = 0;
+% I1 = imgaussfilt(I1,0.25);
+imagesc(I1); colormap(gray); set(gca,'YDir','normal');
 
+figure(2);
+imagesc(original_img); colormap(gray); set(gca,'YDir','normal');

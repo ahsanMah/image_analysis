@@ -1,4 +1,4 @@
-function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
+function [G, super_src, sink] = constructGraph(dim, original_img, scheme, prune)
     
     % Scheme 1 Weights:
     %   pixel-pixel  -> 1
@@ -11,7 +11,6 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     G = imageGraph([dim,dim],4);
     G = digraph(G.Edges, G.Nodes)
     
-    prune = 0;
     
     if prune == 1
     
@@ -42,14 +41,6 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
 
     end
     
-%   % Remove nodes that are not connected to anything
-%     disp('Removing disconnected nodes...');
-%     indeg = indegree(G)==0;
-%     outdeg = outdegree(G)==0;
-%     lonely_nodes = G.Nodes.PixelIndex(indeg & outdeg);
-%     G = rmnode(G, lonely_nodes)
-%     
-    
     [Gmag,Gdir] = imgradient(original_img);
 
     gradients   = Gmag(:);
@@ -69,11 +60,6 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     nodes = G.Nodes.PixelIndex;
     node_intensities = intensities(nodes);
       
-%     nonzero_pixels = (intensities > 0);
-%     background_pixels = intensities(nonzero_pixels);
-%     background_nodes = find(nonzero_pixels == 1);
-   
-    
     foreground_pixels = node_intensities;
     num_nodes = size(node_intensities,1)
     
@@ -84,9 +70,11 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
     % General heuristic as skull shows up lighter on MRI
     mean_target = 200
     
-    WM_mean = 61;
-    WM_sd = 14;
-    mean_target = WM_mean; %white matter mean
+    WM_mean = 60; WM_sd = 14;   
+    skull_mean = 180; skull_sd = 20;
+    
+    [skull_mean, skull_sd, WM_mean, WM_sd] = calc_estimates(original_img);
+  
 
     % Want high weights when connecting to background pixels 
     % If background -> High weight else Low
@@ -115,31 +103,28 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
             % Target is brain
             % Background is 0 and skull
             
+            sm_low = skull_mean - skull_sd;
+            bg_pixels = node_intensities > sm_low;
+            
+            % Source not connected to WM class
+            s_weight = zeros(num_nodes,1);
+            max_weight = max(max(s_weight(:)), MAX);
+            s_weight(node_intensities < 1 | bg_pixels) = max_weight;
+
             sdw = 1*WM_sd;
             wm_low = WM_mean-sdw; wm_high = WM_mean+sdw;
             target_pixels = node_intensities > wm_low & node_intensities < wm_high;
             
-            skull_mean = 180; skull_sd = 20;
-            sm_low = skull_mean - skull_sd;
-            bg_pixels = node_intensities > sm_low;
-            
-            s_weight = zeros(num_nodes,1);
-            
-%             s_weight(node_intensities < wm_low) = bg_low .* (bg_low - wm_low).^2;
-            max_weight = max(max(s_weight(:)), MAX);
-            s_weight(node_intensities == 0) = max_weight;
-            s_weight(bg_pixels) = max_weight;
-            
             t_weight = node_intensities';
-%             t_weight = t_weight .* min(1, 1./(t_weight - mean_target).^2);
+%             t_weight = t_weight .* min(1, 1./(t_weight - WM_mean).^2);
             t_weight = t_weight .* min(1, 1./abs(t_weight - mean_target));
-            t_weight(node_intensities < 1) = 0; %Not conected to background
+            t_weight(node_intensities < 1 | bg_pixels) = 0; %Not conected to background
             t_weight(target_pixels) = MAX;
         
         case 4
             %Assuming background and foreground intensities
-            mean_background = 50;
-            mean_target = 200;
+            mean_background = skull_mean;
+            mean_target = WM_mean;
             
             s_weight = node_intensities .* min(1, 1./(node_intensities - mean_background).^2);
             t_weight = node_intensities .* min(1, 1./(node_intensities - mean_target).^2);
@@ -148,7 +133,8 @@ function [G, super_src, sink] = constructGraph(dim, original_img, scheme)
             disp('Strict cutoff')
             s_weight = node_intensities;
             t_weight = node_intensities;
-            
+            mean_target = skull_mean;
+            mean_background = WM_mean;
             s_weight(s_weight > mean_target) = 0;
             t_weight(t_weight < mean_target) = 0;
        
